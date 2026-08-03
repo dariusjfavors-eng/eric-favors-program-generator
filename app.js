@@ -304,10 +304,12 @@
       technique: cfg.technique,
       level: cfg.level,
       focus: cfg.focus,
+      focusLabel: FOCUS_LABELS[cfg.focus],
+      focusNote: FOCUS_NOTES[cfg.focus],
       days: cfg.days,
       weeksCount: cfg.weeks,
       notes: cfg.notes,
-      generatedDate: new Date(),
+      generatedDate: new Date().toISOString(),
       weeks,
       lifting,
     };
@@ -318,7 +320,7 @@
   // ---------------------------------------------------------------------
 
   function fmtDate(d) {
-    return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+    return new Date(d).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
   }
 
   function eventLabel(program) {

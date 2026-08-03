@@ -71,13 +71,15 @@
     return modal;
   }
 
-  window.attemptGoogleSheetExport = function (program, tsv) {
+  window.attemptGoogleSheetExport = function (program /*, tsv (unused — Code.gs now builds the formatted sheet from the structured program object) */) {
     if (!CONFIG.APPS_SCRIPT_URL) {
       ensureModal();
       return;
     }
-    const rows = tsv.split("\n").map((line) => line.split("\t"));
-    const payload = JSON.stringify({ athleteName: program.athleteName, rows });
+    // Send the whole structured program (weeks -> sessions -> categories ->
+    // drills) instead of a flat text grid, so Code.gs can tell a week banner
+    // from a drill row and format each one properly.
+    const payload = JSON.stringify(program);
 
     const form = document.createElement("form");
     form.method = "POST";
