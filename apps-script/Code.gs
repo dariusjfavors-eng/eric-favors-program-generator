@@ -14,6 +14,10 @@ function doPost(e) {
     var ss = SpreadsheetApp.openById(copy.getId());
     var sheet = ss.getSheets()[0];
     sheet.clear();
+    // clear() wipes content and formatting but leaves data validation rules
+    // (e.g. a leftover yes/no dropdown) in place, which then rejects any
+    // generated text that doesn't match — strip those explicitly too.
+    sheet.getRange(1, 1, sheet.getMaxRows(), sheet.getMaxColumns()).clearDataValidations();
 
     var maxCols = 1;
     for (var i = 0; i < rows.length; i++) {
