@@ -1,41 +1,35 @@
 /* ==========================================================================
-   Optional: live "Export to Google Sheet" integration.
+   Live "Export to Google Sheet" — backed by a Google Apps Script web app.
 
-   This creates a real copy of Eric's Throwing Program Template inside his
-   Drive "programs" folder and fills it in — no custom backend required,
-   just Google Identity Services (sign-in) + the Drive/Sheets REST APIs
-   called directly from the browser with the athlete's/coach's own Google
-   account.
+   Why Apps Script instead of OAuth: an Apps Script web app deployed with
+   "Execute as: Me" runs as whoever deployed it, every time, with no
+   per-visit Google sign-in — which matters a lot for a tool meant to be
+   used from a phone home-screen icon with as few taps as possible. The
+   trade-off is a ~10 minute one-time setup by whoever owns the Drive
+   folder, instead of a Google Cloud OAuth client.
 
-   ONE-TIME SETUP (do this once, takes ~10 minutes):
-   1. Go to https://console.cloud.google.com/apis/credentials
-   2. Create a project (or use an existing one).
-   3. Enable the "Google Sheets API" and "Google Drive API".
-   4. Create an "OAuth client ID" of type "Web application".
-      - Add the URL this app is hosted at (e.g. https://yourdomain.com)
-        under "Authorized JavaScript origins".
-   5. Paste the client ID below into CONFIG.CLIENT_ID.
-   6. Configure the OAuth consent screen with the Google account(s) that
-      should be allowed to use this (Eric's account, yours, etc.) as test
-      users if the app is in "Testing" mode.
+   ONE-TIME SETUP:
+   1. Go to https://script.google.com (signed into the Google account that
+      has edit access to the "programs" Drive folder).
+   2. New project -> paste in the provided Code.gs content -> save.
+   3. Deploy -> New deployment -> gear icon -> "Web app".
+      - Execute as: Me
+      - Who has access: Anyone
+   4. Deploy, authorize (click through the "unverified app" warning since
+      it's your own script), then copy the Web app URL (ends in /exec).
+   5. Paste that URL into APPS_SCRIPT_URL below.
 
-   Until CLIENT_ID is set, the "Export to Google Sheet" button shows these
-   instructions instead of failing silently. The "Copy for Google Sheets"
-   button works right away with zero setup.
+   Until APPS_SCRIPT_URL is set, the button shows setup instructions
+   instead of failing silently. "Copy for Google Sheets" works right now
+   with zero setup either way.
    ========================================================================== */
 
 (function () {
   "use strict";
 
   const CONFIG = {
-    CLIENT_ID: "", // <-- paste your OAuth Web Client ID here
-    TEMPLATE_SHEET_ID: "1znL4xPRYt2SoWylNOK1Sr6Ixeubb-e6_brb0GCW3ZYc", // Eric's real "Throwing Program Template"
-    DEST_FOLDER_ID: "12Ikyh_09IfV2gEE1MSfi6idjZL7fO3lC", // Eric's real "programs" Drive folder
-    SCOPES: "https://www.googleapis.com/auth/drive.file",
+    APPS_SCRIPT_URL: "", // <-- paste your Apps Script Web App /exec URL here
   };
-
-  let tokenClient = null;
-  let accessToken = null;
 
   function ensureModal() {
     let modal = document.getElementById("setupModal");
@@ -48,12 +42,12 @@
       <div style="background:#1a1b1d;border:1px solid #333538;border-radius:12px;max-width:480px;padding:26px;font-family:'Manrope',sans-serif;color:#dfe2e5;">
         <div style="font-family:'Oswald',sans-serif;text-transform:uppercase;color:#fff;font-size:20px;margin-bottom:10px;">One-time setup needed</div>
         <p style="font-size:14px;line-height:1.6;color:#9aa0a6;">
-          Live "Export to Google Sheet" needs a free Google OAuth client ID connected once by whoever
-          owns this tool. Until then, use <b style="color:#22c55e">Copy for Google Sheets</b> — it works
-          right now with zero setup, just paste into a duplicated Template sheet.
+          Live "Export to Google Sheet" needs a one-time Apps Script deployment connected by
+          whoever owns the Drive folder. Until then, use <b style="color:#22c55e">Copy for Google Sheets</b> —
+          it works right now with zero setup, just paste into a duplicated Template sheet.
         </p>
         <p style="font-size:12.5px;line-height:1.6;color:#656b72;">
-          Setup steps are documented in <code>sheets_export.js</code> at the top of the file.
+          Setup steps are documented at the top of <code>sheets_export.js</code>.
         </p>
         <button id="setupModalClose" style="margin-top:14px;width:100%;padding:12px;border-radius:8px;border:none;background:#22c55e;color:#06180d;font-family:'Oswald',sans-serif;font-weight:600;text-transform:uppercase;cursor:pointer;">Got it</button>
       </div>
@@ -64,69 +58,26 @@
     return modal;
   }
 
-  function loadGis() {
-    return new Promise((resolve, reject) => {
-      if (window.google && window.google.accounts) return resolve();
-      const s = document.createElement("script");
-      s.src = "https://accounts.google.com/gsi/client";
-      s.onload = resolve;
-      s.onerror = reject;
-      document.head.appendChild(s);
-    });
-  }
-
-  async function getAccessToken() {
-    if (accessToken) return accessToken;
-    await loadGis();
-    return new Promise((resolve, reject) => {
-      tokenClient = google.accounts.oauth2.initTokenClient({
-        client_id: CONFIG.CLIENT_ID,
-        scope: CONFIG.SCOPES,
-        callback: (resp) => {
-          if (resp.error) return reject(resp);
-          accessToken = resp.access_token;
-          resolve(accessToken);
-        },
-      });
-      tokenClient.requestAccessToken({ prompt: "" });
-    });
-  }
-
-  async function copyTemplate(token, newName) {
-    const res = await fetch(`https://www.googleapis.com/drive/v3/files/${CONFIG.TEMPLATE_SHEET_ID}/copy`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ name: newName, parents: [CONFIG.DEST_FOLDER_ID] }),
-    });
-    if (!res.ok) throw new Error("Drive copy failed: " + (await res.text()));
-    return res.json();
-  }
-
-  async function writeRows(token, spreadsheetId, tsv) {
-    const rows = tsv.split("\n").map((line) => line.split("\t"));
-    const res = await fetch(
-      `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/A1?valueInputOption=USER_ENTERED`,
-      {
-        method: "PUT",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ range: "A1", majorDimension: "ROWS", values: rows }),
-      }
-    );
-    if (!res.ok) throw new Error("Sheets write failed: " + (await res.text()));
-    return res.json();
-  }
-
   window.attemptGoogleSheetExport = async function (program, tsv) {
-    if (!CONFIG.CLIENT_ID) {
+    if (!CONFIG.APPS_SCRIPT_URL) {
       ensureModal();
       return;
     }
     try {
-      const token = await getAccessToken();
-      const file = await copyTemplate(token, `${program.athleteName} Throwing Program`);
-      await writeRows(token, file.id, tsv);
-      window.open(`https://docs.google.com/spreadsheets/d/${file.id}/edit`, "_blank");
-      if (window.toast) window.toast("Sheet created in your Drive programs folder");
+      const rows = tsv.split("\n").map((line) => line.split("\t"));
+      const res = await fetch(CONFIG.APPS_SCRIPT_URL, {
+        method: "POST",
+        // text/plain avoids a CORS preflight against the Apps Script /exec
+        // endpoint (which doesn't handle OPTIONS) — Apps Script still reads
+        // the body as JSON on its side regardless of the declared type.
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ athleteName: program.athleteName, rows }),
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      if (!data.url) throw new Error("Apps Script response was missing a sheet URL");
+      window.open(data.url, "_blank");
+      if (window.toast) window.toast("Sheet created in the programs Drive folder");
     } catch (err) {
       console.error(err);
       alert("Google Sheet export failed — see console for details. Copy for Google Sheets still works as a fallback.");

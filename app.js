@@ -621,7 +621,10 @@
     });
 
     document.getElementById("btnSheetExport").addEventListener("click", () => {
-      if (!lastProgram) return;
+      if (!lastProgram) {
+        toast("Generate a program first");
+        return;
+      }
       if (window.attemptGoogleSheetExport) {
         window.attemptGoogleSheetExport(lastProgram, buildSheetTSV(lastProgram));
       }
