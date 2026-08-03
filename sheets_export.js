@@ -28,7 +28,7 @@
   "use strict";
 
   const CONFIG = {
-    APPS_SCRIPT_URL: "", // <-- paste your Apps Script Web App /exec URL here
+    APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbzqRVKH35mV0-f1_Id3fdJhjcmkv_DFQNmUhxIasq-0VzixRcFZCU5I-sPfOdnmr1Vv/exec",
   };
 
   function ensureModal() {
