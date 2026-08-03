@@ -25,10 +25,19 @@ function doPost(e) {
     var athleteName = payload.athleteName || "Athlete";
 
     var ss = SpreadsheetApp.create(athleteName + " Throwing Program");
-    var file = DriveApp.getFileById(ss.getId());
-    var folder = DriveApp.getFolderById(FOLDER_ID);
-    folder.addFile(file);
-    DriveApp.getRootFolder().removeFile(file);
+
+    // Moving into the target Drive folder is a nice-to-have, not critical —
+    // if it fails for any reason, keep going and build the sheet anyway.
+    // Better a fully-formatted sheet in the wrong folder than an empty one
+    // in the right folder because an earlier step threw.
+    try {
+      var file = DriveApp.getFileById(ss.getId());
+      var folder = DriveApp.getFolderById(FOLDER_ID);
+      folder.addFile(file);
+      DriveApp.getRootFolder().removeFile(file);
+    } catch (moveErr) {
+      // ignore — sheet stays in My Drive root instead of the programs folder
+    }
 
     var sheet = ss.getSheets()[0];
     sheet.setName("Program");
