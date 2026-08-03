@@ -41,7 +41,7 @@
   "use strict";
 
   const CONFIG = {
-    APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbwZ9uydmjL-3dwkbMn2X8Dw5R1KMhDWj5PWLqYOJSbu7jjkwXK6Ckr72nsvCkpBl19g/exec",
+    APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycby3aqw8AsvBm1gyg6DG6vhe_I24iO-jelfnmwjFqZegIp0BcVyMiF1JAcfZyJXU-xc/exec",
   };
 
   function ensureModal() {
