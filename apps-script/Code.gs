@@ -1,15 +1,3 @@
-// ============================================================================
-// Coach Eric Favors — Throwing Program Generator: Google Sheet builder
-//
-// Builds a fully-formatted program sheet from scratch (dark green / gold
-// bands matching the Ireland/Olympian brand, week + session banners,
-// category dividers, DONE checkboxes, a 1-5 Quality dropdown, hyperlinked
-// video demos) instead of copying and stripping an old plain template.
-// Receives the FULL structured program object from the generator (weeks ->
-// sessions -> categories -> drills), not a flat text grid, so each row type
-// can get its own formatting.
-// ============================================================================
-
 var FOLDER_ID = "12Ikyh_09IfV2gEE1MSfi6idjZL7fO3lC";
 var NUM_COLS = 10; // A..J
 var COLUMN_HEADERS = ["DONE", "DRILL", "DRILL GOAL", "KEY CUES", "PRESCRIBED", "COMPLETED", "QUALITY", "COACH NOTES", "ATHLETE NOTES", "DEMO"];
@@ -84,10 +72,6 @@ function doPost(e) {
     return HtmlService.createHtmlOutput("<p>Something went wrong: " + String(err) + "</p>");
   }
 }
-
-// ---------------------------------------------------------------------------
-// Layout helpers
-// ---------------------------------------------------------------------------
 
 function setColumnWidths(sheet) {
   for (var c = 0; c < COLUMN_WIDTHS.length; c++) sheet.setColumnWidth(c + 1, COLUMN_WIDTHS[c]);
@@ -256,15 +240,11 @@ function writeLiftingSection(sheet, row, payload) {
       }
       row++;
     });
-    row++; // spacer between lift blocks
+    row++;
   });
 
   return row;
 }
-
-// ---------------------------------------------------------------------------
-// Small text helpers
-// ---------------------------------------------------------------------------
 
 function eventLabelText(payload) {
   if (payload.event === "both") return "Shot Put + Discus";
