@@ -22,6 +22,19 @@
    Until APPS_SCRIPT_URL is set, the button shows setup instructions
    instead of failing silently. "Copy for Google Sheets" works right now
    with zero setup either way.
+
+   IMPORTANT — why this uses a real form submission instead of fetch():
+   Apps Script web apps respond via a 302 redirect to a
+   script.googleusercontent.com/macros/echo URL. The Drive file gets
+   created successfully server-side either way, but fetch()'s CORS
+   handling of that second hop is unreliable across browsers — it can
+   report a failure to the page even though the sheet was already made,
+   which is exactly the "it says it failed but the sheet's actually
+   there" symptom. Submitting a real <form> into a new tab sidesteps
+   this entirely: the browser just navigates the new tab through
+   Google's redirect chain like any other link, and Code.gs sends that
+   tab straight to the finished sheet instead of returning JSON for us
+   to read back.
    ========================================================================== */
 
 (function () {
@@ -58,29 +71,30 @@
     return modal;
   }
 
-  window.attemptGoogleSheetExport = async function (program, tsv) {
+  window.attemptGoogleSheetExport = function (program, tsv) {
     if (!CONFIG.APPS_SCRIPT_URL) {
       ensureModal();
       return;
     }
-    try {
-      const rows = tsv.split("\n").map((line) => line.split("\t"));
-      const res = await fetch(CONFIG.APPS_SCRIPT_URL, {
-        method: "POST",
-        // text/plain avoids a CORS preflight against the Apps Script /exec
-        // endpoint (which doesn't handle OPTIONS) — Apps Script still reads
-        // the body as JSON on its side regardless of the declared type.
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({ athleteName: program.athleteName, rows }),
-      });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
-      if (!data.url) throw new Error("Apps Script response was missing a sheet URL");
-      window.open(data.url, "_blank");
-      if (window.toast) window.toast("Sheet created in the programs Drive folder");
-    } catch (err) {
-      console.error(err);
-      alert("Google Sheet export failed — see console for details. Copy for Google Sheets still works as a fallback.");
-    }
+    const rows = tsv.split("\n").map((line) => line.split("\t"));
+    const payload = JSON.stringify({ athleteName: program.athleteName, rows });
+
+    const form = document.createElement("form");
+    form.method = "POST";
+    form.action = CONFIG.APPS_SCRIPT_URL;
+    form.target = "_blank"; // Code.gs redirects this new tab straight to the finished sheet
+    form.style.display = "none";
+
+    const input = document.createElement("input");
+    input.type = "hidden";
+    input.name = "payload";
+    input.value = payload;
+    form.appendChild(input);
+
+    document.body.appendChild(form);
+    form.submit();
+    document.body.removeChild(form);
+
+    if (window.toast) window.toast("Opening your sheet in a new tab…");
   };
 })();
