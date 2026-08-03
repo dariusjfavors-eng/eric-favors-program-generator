@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>Program Generator — Coach Eric Favors</title>
+<meta name="description" content="Generate a custom throwing + lifting program for any athlete in seconds." />
+<link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#0b0c0d" />
+<link rel="icon" href="favicon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <span class="brand-clover">☘️</span>
+    <span class="brand-word">Coach Eric Favors</span>
+  </div>
+  <div class="brand-sub">Program Generator</div>
+</div>
+
+<!-- ============================= WIZARD ============================= -->
+<div class="app-shell" id="wizardShell">
+  <div class="hero">
+    <div class="hero-kicker">Athlete Intake → Program in Seconds</div>
+    <h1>Build the <em>Throwing Program</em></h1>
+    <p>Pick the profile. Everything else — drills, cues, video links, the 4-week lift wave — pulls straight from Eric's own coaching library.</p>
+  </div>
+
+  <form id="wizardForm" autocomplete="off">
+
+    <div class="field-group">
+      <div class="field-label"><span class="field-index">1</span><span class="txt">Athlete Name</span></div>
+      <input class="name-input" id="athleteName" type="text" placeholder="e.g. Jordan Reyes" required />
+    </div>
+
+    <div class="field-group">
+      <div class="field-label"><span class="field-index">2</span><span class="txt">Event</span></div>
+      <div class="chip-row" id="chip-event" data-field="event">
+        <div class="chip selected" data-value="shot_put">Shot Put</div>
+        <div class="chip" data-value="discus">Discus</div>
+        <div class="chip" data-value="both">Both (Combo)</div>
+      </div>
+    </div>
+
+    <div class="field-group" id="techniqueGroup">
+      <div class="field-label"><span class="field-index">3</span><span class="txt">Technique</span></div>
+      <div class="chip-row" id="chip-technique" data-field="technique">
+        <div class="chip selected" data-value="glide">Glide</div>
+        <div class="chip" data-value="spin">Spin</div>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <div class="field-label"><span class="field-index">4</span><span class="txt">Level</span></div>
+      <div class="chip-row" id="chip-level" data-field="level">
+        <div class="chip level-beginner selected" data-value="beginner">Beginner<span class="chip-sub">New to the event</span></div>
+        <div class="chip level-intermediate" data-value="intermediate">Intermediate<span class="chip-sub">Has the basics</span></div>
+        <div class="chip level-advanced" data-value="advanced">Advanced<span class="chip-sub">Competing, refining</span></div>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <div class="field-label"><span class="field-index">5</span><span class="txt">Focus</span><span class="hint">shapes drill mix + lift intensity</span></div>
+      <div class="chip-row" id="chip-focus" data-field="focus">
+        <div class="chip selected" data-value="fundamentals">Learn Fundamentals</div>
+        <div class="chip" data-value="full_throw">Build the Full Throw</div>
+        <div class="chip" data-value="in_season">In-Season Sharpening</div>
+        <div class="chip" data-value="off_season">Off-Season Strength</div>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <div class="field-label"><span class="field-index">6</span><span class="txt">Training Days / Week</span></div>
+      <div class="chip-row" id="chip-days" data-field="days">
+        <div class="chip" data-value="3">3 Days</div>
+        <div class="chip selected" data-value="4">4 Days</div>
+        <div class="chip" data-value="5">5 Days</div>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <div class="field-label"><span class="field-index">7</span><span class="txt">Program Length</span></div>
+      <div class="chip-row" id="chip-weeks" data-field="weeks">
+        <div class="chip selected" data-value="4">4 Weeks</div>
+        <div class="chip" data-value="6">6 Weeks</div>
+        <div class="chip" data-value="8">8 Weeks</div>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <div class="toggle-row">
+        <div class="txt-block">
+          <b>Include Lifting Program</b>
+          <small>Paired strength block, same as Eric's standard build</small>
+        </div>
+        <div class="switch on" id="liftToggle"><div class="knob"></div></div>
+      </div>
+    </div>
+
+    <details class="more-options">
+      <summary>More options (equipment, weak points, notes)</summary>
+      <textarea id="coachNotes" placeholder="e.g. No access to a reverse band. Working on staying back through the middle. Has a meet in 5 weeks."></textarea>
+    </details>
+
+    <div class="error-banner" id="errorBanner"></div>
+
+    <div class="generate-wrap">
+      <div class="generate-wrap-inner">
+        <button type="submit" class="btn-generate">Generate Program <span class="arrow">→</span></button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<!-- ============================= OUTPUT ============================= -->
+<div class="output-shell" id="outputShell">
+  <div class="program-header" id="programHeader"></div>
+
+  <div class="action-bar">
+    <button class="btn-solid" id="btnPrint">🖨 Print / Save PDF</button>
+    <button class="btn-ghost" id="btnCopySheet">📋 Copy for Google Sheets</button>
+    <button class="btn-ghost" id="btnSheetExport">📤 Export to Google Sheet</button>
+    <button class="btn-ghost" id="btnNew">↺ New Program</button>
+  </div>
+
+  <div class="week-tabs" id="weekTabs"></div>
+  <div id="weekPanels"></div>
+
+  <div class="lift-section" id="liftSection"></div>
+
+  <div class="footer-note"><span class="clover">☘</span> Generated by the Coach Eric Favors program engine &mdash; edit freely before sending to your athlete.</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="data/drill_library.js"></script>
+<script src="sheets_export.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
